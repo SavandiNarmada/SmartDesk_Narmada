@@ -11,7 +11,7 @@ const memoryCooldown = new Map<string, number>();
 // Thresholds that trigger notifications
 const ALERT_THRESHOLDS = {
   air_quality: { max: 150, label: 'Air Quality', unit: 'AQI' },
-  noise_level: { max: 70, label: 'Noise Level', unit: 'dB' },
+  noise_level: { max: 80, label: 'Noise Level', unit: 'dB' },
   light_level: { min: 50, max: 950, label: 'Light Level', unit: 'lux' },
   temperature: { min: 16, max: 32, label: 'Temperature', unit: '°C' },
   humidity: { min: 25, max: 75, label: 'Humidity', unit: '%' },

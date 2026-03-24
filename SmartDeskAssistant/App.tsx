@@ -11,6 +11,19 @@ import { RealtimeProvider } from './src/context/RealtimeContext';
 // Navigation
 import Navigation from './src/navigation/Navigation';
 
+// Push notifications — must be active at root level at all times
+import { usePushNotifications } from './src/hooks/usePushNotifications';
+
+function AppContent() {
+  usePushNotifications();
+  return (
+    <>
+      <Navigation />
+      <StatusBar style="auto" />
+    </>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
@@ -18,8 +31,7 @@ export default function App() {
         <AuthProvider>
           <DevicesProvider>
             <RealtimeProvider>
-              <Navigation />
-              <StatusBar style="auto" />
+              <AppContent />
             </RealtimeProvider>
           </DevicesProvider>
         </AuthProvider>
