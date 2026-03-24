@@ -5,7 +5,7 @@ import { generateToken, generateRefreshToken, verifyToken } from '../utils/jwt';
 import { generateId } from '../utils/helpers';
 import { AppError } from '../middleware/errorHandler';
 import { User, RegisterData, LoginData, JWTPayload } from '../types';
-import { sendUserNotification } from '../services/pushNotificationService';
+import { broadcastNotification } from '../services/pushNotificationService';
 
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
@@ -87,12 +87,11 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     const token = generateToken({ userId: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ userId: user.id, email: user.email });
 
-    // Send login push notification (fire-and-forget)
+    // Broadcast login notification to all connected devices (fire-and-forget)
     const loginTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-    sendUserNotification(
-      user.id,
+    broadcastNotification(
       'New Login Detected',
-      `Your SmartDesk account was accessed at ${loginTime}. If this wasn't you, change your password immediately.`,
+      `${user.full_name || user.email} logged in at ${loginTime}.`,
       { type: 'login' }
     ).catch((err) => console.error('Login notification failed:', err));
 

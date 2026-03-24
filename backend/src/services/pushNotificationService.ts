@@ -213,6 +213,20 @@ export async function sendUserNotification(
   await sendExpoPushNotifications(pushTokens, title, body, data);
 }
 
+// ─── Broadcast Notification to ALL Registered Devices ───
+
+export async function broadcastNotification(
+  title: string,
+  body: string,
+  data?: Record<string, any>
+): Promise<void> {
+  const [tokens]: any = await pool.query(`SELECT expo_push_token FROM push_tokens`);
+  if (tokens.length === 0) return;
+
+  const pushTokens: string[] = tokens.map((t: any) => t.expo_push_token);
+  await sendExpoPushNotifications(pushTokens, title, body, data);
+}
+
 // ─── Main: Check Readings & Send Alerts ─────────────────
 
 export async function checkAndNotify(
@@ -221,11 +235,8 @@ export async function checkAndNotify(
   deviceName: string,
   reading: SensorReading
 ): Promise<void> {
-  // Get user's push tokens
-  const [tokens]: any = await pool.query(
-    `SELECT expo_push_token FROM push_tokens WHERE user_id = ?`,
-    [userId]
-  );
+  // Get all registered push tokens (broadcast to every connected device)
+  const [tokens]: any = await pool.query(`SELECT expo_push_token FROM push_tokens`);
   if (tokens.length === 0) return;
 
   const pushTokens: string[] = tokens.map((t: any) => t.expo_push_token);
