@@ -195,6 +195,24 @@ async function logNotification(
   );
 }
 
+// ─── Send a One-Off Notification to a User ──────────────
+
+export async function sendUserNotification(
+  userId: string,
+  title: string,
+  body: string,
+  data?: Record<string, any>
+): Promise<void> {
+  const [tokens]: any = await pool.query(
+    `SELECT expo_push_token FROM push_tokens WHERE user_id = ?`,
+    [userId]
+  );
+  if (tokens.length === 0) return;
+
+  const pushTokens: string[] = tokens.map((t: any) => t.expo_push_token);
+  await sendExpoPushNotifications(pushTokens, title, body, data);
+}
+
 // ─── Main: Check Readings & Send Alerts ─────────────────
 
 export async function checkAndNotify(

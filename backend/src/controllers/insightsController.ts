@@ -3,6 +3,7 @@ import pool from '../config/database';
 import { generateId } from '../utils/helpers';
 import { AppError } from '../middleware/errorHandler';
 import { generateAIInsight } from '../services/aiInsightsService';
+import { sendUserNotification } from '../services/pushNotificationService';
 
 // The database client may auto-parse JSON columns into arrays/objects.
 // This helper ensures we always get a parsed value regardless.
@@ -178,6 +179,16 @@ export async function getAITips(req: Request, res: Response, next: NextFunction)
 
     // forceRefresh=true skips cooldown so each button press generates a new tip
     const insight = await generateAIInsight(deviceId, true);
+
+    // Send push notification with the AI tip (fire-and-forget)
+    if (insight) {
+      sendUserNotification(
+        userId,
+        `AI Tip: ${insight.title}`,
+        insight.description || 'New AI workspace tip generated. Open the app to view it.',
+        { type: 'ai_tip', deviceId }
+      ).catch((err) => console.error('AI tip notification failed:', err));
+    }
 
     res.json({
       success: true,

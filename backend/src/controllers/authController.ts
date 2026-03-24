@@ -5,6 +5,7 @@ import { generateToken, generateRefreshToken, verifyToken } from '../utils/jwt';
 import { generateId } from '../utils/helpers';
 import { AppError } from '../middleware/errorHandler';
 import { User, RegisterData, LoginData, JWTPayload } from '../types';
+import { sendUserNotification } from '../services/pushNotificationService';
 
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
@@ -85,6 +86,15 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     // Generate tokens
     const token = generateToken({ userId: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ userId: user.id, email: user.email });
+
+    // Send login push notification (fire-and-forget)
+    const loginTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    sendUserNotification(
+      user.id,
+      'New Login Detected',
+      `Your SmartDesk account was accessed at ${loginTime}. If this wasn't you, change your password immediately.`,
+      { type: 'login' }
+    ).catch((err) => console.error('Login notification failed:', err));
 
     // Remove password hash from response
     delete user.password_hash;
