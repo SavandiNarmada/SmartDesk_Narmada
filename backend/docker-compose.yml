@@ -1,0 +1,77 @@
+services:
+  # ── PostgreSQL Database ──────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: sda-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smart_desk_assistant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      TZ: Asia/Colombo
+    ports:
+      - "5433:5432"   # Use 5433 on host to avoid conflict with local PostgreSQL
+    volumes:
+      # Persist data between restarts
+      - pgdata:/var/lib/postgresql/data
+      # Auto-run schema.sql on FIRST start (ignored after DB exists)
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smart_desk_assistant"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ── Node.js Backend API ──────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sda-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Server
+      PORT: 3000
+      NODE_ENV: production
+      TZ: Asia/Colombo
+      # Database — points to the "db" container by its service name
+      DATABASE_URL: postgresql://postgres:postgres123@db:5432/smart_desk_assistant
+      # JWT
+      JWT_SECRET: smart_desk_assistant_docker_secret_change_me
+      JWT_EXPIRES_IN: 7d
+      # CORS — allow all origins for Expo Go
+      CORS_ORIGIN: "*"
+      # Protonest Connect
+      PROTONEST_API_URL: https://api.protonestconnect.co/api/v1/user
+      PROTONEST_ENCRYPTION_KEY: docker_encryption_key_32_chars_!
+      MQTT_CONNECT_OVERRIDE_EMAIL: pasindudeemantha2000@gmail.com
+      MQTT_CONNECT_OVERRIDE_PASSWORD: "CQ7hn6y8H#8c#Zu3UVdXV@"
+      # AI (leave AI_API_KEY empty to skip, or set your Gemini key)
+      AI_PROVIDER: gemini
+      AI_API_KEY: AIzaSyAeSDixXapOix5MigNPVtqSR6t7KN3T084
+      AI_INSIGHT_INTERVAL_HOURS: 2
+      # Topic mapping
+      TOPIC_MAPPING: "gas:air_quality,light:light_level,noise:noise_level,temperature:temperature,humidity:humidity"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── pgAdmin 4 (Database Viewer) ──────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: sda-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@smartdesk.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      TZ: Asia/Colombo
+    ports:
+      - "5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
