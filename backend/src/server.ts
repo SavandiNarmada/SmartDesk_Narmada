@@ -15,6 +15,7 @@ import ingestRoutes from './routes/ingest';
 import protonestRoutes from './routes/protonest';
 import thresholdsRoutes from './routes/thresholds';
 import { startSyncService } from './services/protonestSync';
+import { startScheduledNotifications } from './services/scheduledNotifications';
 import { broadcastSensorReading } from './services/websocketService';
 
 // Load environment variables
@@ -100,6 +101,9 @@ async function startServer() {
       // Start Protonest sync service (polls every 5 seconds)
       // WebSocket handles real-time; polling catches anything missed and broadcasts to app clients
       startSyncService(5000, broadcastSensorReading);
+
+      // Start scheduled push notifications (monitoring update every 2min, AI tip every 10min)
+      startScheduledNotifications();
     });
   } catch (error) {
     console.error('Failed to start server:', error);

@@ -3,7 +3,7 @@ import WebSocket, { WebSocketServer } from 'ws';
 import { IncomingMessage } from 'http';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database';
-import { checkAndNotify } from './pushNotificationService';
+import { checkAndNotify, broadcastNotification } from './pushNotificationService';
 import * as protonestClient from './protonestClient';
 import { decryptSecret } from './protonestSync';
 import {
@@ -273,36 +273,12 @@ export function broadcastSensorReading(
 // ─── Welcome & Alert Notifications on Connect ──────────
 
 async function sendWelcomeNotification(userId: string): Promise<void> {
-  const [tokens]: any = await pool.query(
-    `SELECT expo_push_token FROM push_tokens WHERE user_id = ?`,
-    [userId]
+  await broadcastNotification(
+    'SmartDesk Assistant is Active',
+    'Your environment is now being monitored through Smart Desk Assistant. You will be alerted if any conditions need attention.',
+    { type: 'welcome' }
   );
-  if (tokens.length === 0) return;
-
-  const pushTokens: string[] = tokens.map((t: any) => t.expo_push_token);
-
-  const messages = pushTokens.map((token: string) => ({
-    to: token,
-    sound: 'default' as const,
-    title: 'Smart Desk Connected',
-    body: 'Your workspace is now being monitored. You will receive alerts if conditions need attention.',
-    data: { type: 'welcome' },
-    priority: 'high' as const,
-  }));
-
-  try {
-    await fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(messages),
-    });
-    console.log(`📲 Welcome notification sent (user: ${userId})`);
-  } catch (err) {
-    console.error('Failed to send welcome notification:', err);
-  }
+  console.log(`📲 Welcome notification sent (user: ${userId})`);
 }
 
 async function checkExistingReadingsForAlerts(userId: string, deviceIds: string[]): Promise<void> {
